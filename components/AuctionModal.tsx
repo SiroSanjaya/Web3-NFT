@@ -3,15 +3,14 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount } from 'wagmi'
-import { 
-  XMarkIcon,
+import {
   ClockIcon,
-  CurrencyDollarIcon,
-  GavelIcon,
+  ExclamationTriangleIcon,
+  FireIcon,
+  WrenchIcon, // Ganti GavelIcon dengan WrenchIcon
   TrophyIcon,
   UserIcon,
-  FireIcon,
-  ExclamationTriangleIcon
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 
@@ -161,7 +160,7 @@ export default function AuctionModal({ isOpen, onClose, auction }: AuctionModalP
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center space-x-3">
-                  <GavelIcon className="h-6 w-6 text-orange-500" />
+                  <WrenchIcon  className="h-6 w-6 text-orange-500" />
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     Live Auction
                   </h2>
@@ -363,7 +362,7 @@ export default function AuctionModal({ isOpen, onClose, auction }: AuctionModalP
                             {isSubmittingBid ? (
                               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                             ) : (
-                              <GavelIcon className="h-5 w-5 mr-2" />
+                              <WrenchIcon className="h-5 w-5 mr-2" />
                             )}
                             {isSubmittingBid ? 'Placing Bid...' : 'Place Bid'}
                           </button>
@@ -441,3 +440,11 @@ export default function AuctionModal({ isOpen, onClose, auction }: AuctionModalP
     </AnimatePresence>
   )
 }
+
+
+
+
+
+
+
+

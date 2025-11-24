@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 
 // Screens
@@ -46,25 +47,35 @@ function TabNavigator() {
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
-      <Stack.Navigator>
-        <Stack.Screen 
-          name="Main" 
-          component={TabNavigator} 
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen 
-          name="NFT" 
-          component={NFTScreen}
-          options={{ title: 'NFT Details' }}
-        />
-        <Stack.Screen 
-          name="Wallet" 
-          component={WalletScreen}
-          options={{ title: 'Wallet' }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationContainer>
+        <StatusBar style="auto" />
+        <Stack.Navigator>
+          <Stack.Screen 
+            name="Main" 
+            component={TabNavigator} 
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen 
+            name="NFT" 
+            component={NFTScreen}
+            options={{ title: 'NFT Details' }}
+          />
+          <Stack.Screen 
+            name="Wallet" 
+            component={WalletScreen}
+            options={{ title: 'Wallet' }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }
+
+
+
+
+
+
+
+

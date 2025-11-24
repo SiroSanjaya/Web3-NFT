@@ -27,9 +27,25 @@ const polygonAmoy = {
   testnet: true,
 }
 
+// Localhost chain (Hardhat)
+const localhost = {
+  id: 1337,
+  name: 'Localhost 8545',
+  network: 'localhost',
+  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    public: { http: ['http://127.0.0.1:8545'] },
+    default: { http: ['http://127.0.0.1:8545'] },
+  },
+  blockExplorers: {
+    default: { name: 'Local', url: 'http://127.0.0.1:8545' },
+  },
+  testnet: true,
+}
+
 // Configure chains with Polygon Amoy Testnet
 const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [polygonAmoy, polygon],
+  [polygonAmoy, polygon, localhost],
   [publicProvider()]
 )
 

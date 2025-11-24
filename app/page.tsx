@@ -13,7 +13,8 @@ import {
   ChartBarIcon,
   RocketLaunchIcon,
   ShieldCheckIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline'
 import NetworkSwitcher from '@/components/NetworkSwitcher'
 import Logo from '@/components/Logo'
@@ -25,6 +26,9 @@ export default function Home() {
     { name: 'Home', href: '#', icon: HomeIcon, id: 'home' },
     { name: 'Marketplace', href: '/marketplace', icon: ShoppingBagIcon, id: 'marketplace' },
     { name: 'Analytics', href: '/analytics', icon: ChartBarIcon, id: 'analytics' },
+    { name: 'Social', href: '/social', icon: UserGroupIcon, id: 'social' },
+    { name: 'Admin', href: '/admin', icon: ShieldCheckIcon, id: 'admin' },
+    { name: 'AI Features', href: '/ai-features', icon: SparklesIcon, id: 'ai-features' },
     { name: 'Staking', href: '/staking', icon: BanknotesIcon, id: 'staking' },
     { name: 'Profile', href: '/profile/0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6', icon: UserIcon, id: 'profile' },
   ]

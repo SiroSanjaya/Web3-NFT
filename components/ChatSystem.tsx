@@ -459,3 +459,11 @@ export default function ChatSystem({ nftId, sellerId, isOpen, onClose }: ChatSys
     </AnimatePresence>
   )
 }
+
+
+
+
+
+
+
+

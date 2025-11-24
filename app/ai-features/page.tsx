@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
-  SparklesIcon, TrendingUpIcon, ChartBarIcon, LightBulbIcon,
+  SparklesIcon, ArrowTrendingUpIcon, ChartBarIcon, LightBulbIcon,
   MagnifyingGlassIcon, FireIcon, StarIcon, CurrencyDollarIcon,
-  ClockIcon, UserIcon, TagIcon, EyeIcon
+  ClockIcon, UserIcon, TagIcon, EyeIcon, CpuChipIcon, RocketLaunchIcon
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
+import AIRecommendationEngine from '@/components/AIRecommendationEngine'
+import AIChatAssistant from '@/components/AIChatAssistant'
 
 // Mock AI data
 const mockRecommendations = [
@@ -155,7 +157,7 @@ export default function AIFeaturesPage() {
 
           <div className="card text-center">
             <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl mx-auto mb-4">
-              <TrendingUpIcon className="h-6 w-6 text-white" />
+              <ArrowTrendingUpIcon className="h-6 w-6 text-white" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">1,234</h3>
             <p className="text-gray-600 dark:text-gray-400">NFTs Analyzed</p>
@@ -232,7 +234,7 @@ export default function AIFeaturesPage() {
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Price Predictions</h2>
-              <TrendingUpIcon className="h-6 w-6 text-blue-500" />
+              <ArrowTrendingUpIcon className="h-6 w-6 text-blue-500" />
             </div>
 
             <div className="space-y-4">
@@ -353,6 +355,15 @@ export default function AIFeaturesPage() {
           </div>
         </motion.div>
 
+        {/* AI Recommendation Engine */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-8"
+        >
+          <AIRecommendationEngine />
+        </motion.div>
+
         {/* AI Analysis Tool */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -360,7 +371,10 @@ export default function AIFeaturesPage() {
           className="mt-8"
         >
           <div className="card">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">AI NFT Analyzer</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+              <CpuChipIcon className="h-6 w-6 mr-2 text-purple-500" />
+              AI NFT Analyzer
+            </h2>
             <div className="flex items-center space-x-4">
               <input
                 type="text"
@@ -390,7 +404,60 @@ export default function AIFeaturesPage() {
             </p>
           </div>
         </motion.div>
+
+        {/* AI Chat Assistant */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-8"
+        >
+          <div className="card">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+              <CpuChipIcon className="h-6 w-6 mr-2 text-purple-500" />
+              AI Chat Assistant
+            </h2>
+            <AIChatAssistant />
+          </div>
+        </motion.div>
+
+        {/* AI Features Showcase */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-8"
+        >
+          <div className="card">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+              <RocketLaunchIcon className="h-6 w-6 mr-2 text-blue-500" />
+              AI Features Showcase
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
+                <CpuChipIcon className="h-12 w-12 text-purple-500 mx-auto mb-4" />
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Smart Recommendations</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  AI analyzes your preferences and suggests the best NFTs to invest in
+                </p>
+              </div>
+              <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl">
+                <ArrowTrendingUpIcon className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Price Predictions</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Machine learning models predict NFT price movements with high accuracy
+                </p>
+              </div>
+              <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
+                <ChartBarIcon className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Market Analytics</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Real-time market sentiment analysis and trend identification
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   )
 }
+

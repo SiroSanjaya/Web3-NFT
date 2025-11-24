@@ -46,7 +46,7 @@ contract NFTStaking is ReentrancyGuard, Ownable {
     event PoolCreated(uint256 indexed poolId, string name, uint256 minStakePeriod, uint256 rewardMultiplier);
     event PoolUpdated(uint256 indexed poolId, bool isActive);
     
-    constructor(address _nftContract, address _rewardToken) Ownable(msg.sender) {
+    constructor(address _nftContract, address _rewardToken) Ownable() {
         nftContract = IERC721(_nftContract);
         rewardToken = IERC20(_rewardToken);
         
@@ -247,5 +247,6 @@ contract NFTStaking is ReentrancyGuard, Ownable {
         return (stakedNFT, pool);
     }
 }
+
 
 

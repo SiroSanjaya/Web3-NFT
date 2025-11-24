@@ -15,7 +15,7 @@ contract NFTMarketplace is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     Counters.Counter private _itemsSold;
     
     uint256 public listingPrice = 0.025 ether;
-    uint256 public platformFee = 2.5; // 2.5%
+    uint256 public platformFee = 250; // 2.5% (250 basis points)
     uint256 public creatorRoyalty = 5; // 5%
     
     struct NFTItem {
@@ -58,7 +58,7 @@ contract NFTMarketplace is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
         address owner
     );
     
-    constructor() ERC721("NFT Marketplace", "NFTM") Ownable(msg.sender) {}
+    constructor() ERC721("NFT Marketplace", "NFTM") Ownable() {}
     
     // Mint new NFT
     function createNFT(string memory tokenURI, uint256 price, uint256 royaltyPercentage) 
@@ -262,5 +262,6 @@ contract NFTMarketplace is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
         return super.supportsInterface(interfaceId);
     }
 }
+
 
 

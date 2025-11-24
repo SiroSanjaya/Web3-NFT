@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract RewardToken is ERC20, Ownable {
-    constructor() ERC20("NFT Staking Reward", "NSR") Ownable(msg.sender) {
+    constructor() ERC20("NFT Staking Reward", "NSR") Ownable() {
         // Mint initial supply to contract deployer
         _mint(msg.sender, 1000000 * 10**decimals()); // 1 million tokens
     }
@@ -20,5 +20,6 @@ contract RewardToken is ERC20, Ownable {
         _burn(msg.sender, amount);
     }
 }
+
 
 

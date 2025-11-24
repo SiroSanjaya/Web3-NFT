@@ -1,7 +1,8 @@
-'use client'
+ 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useChainId, usePrepareContractWrite, useContractWrite } from 'wagmi'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -24,10 +25,17 @@ import {
   ChatBubbleLeftRightIcon,
   ArrowTopRightOnSquareIcon
 } from '@heroicons/react/24/outline'
+import { fetchPrices, toUsd } from '@/utils/coingecko'
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid'
 import NFTCard from '@/components/NFTCard'
 import AuctionModal from '@/components/AuctionModal'
 import ChatIntegration from '@/components/ChatIntegration'
+import { NFTMarketplaceABI } from '@/utils/contracts'
+import { parseEther } from 'viem'
+// Local deployment fallback for localhost network
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - JSON import is allowed via tsconfig resolveJsonModule
+import deploymentLocal from '../../../deployment-localhost.json'
 
 interface NFTDetail {
   tokenId: string
@@ -78,6 +86,8 @@ interface Activity {
 
 export default function NFTDetailPage({ params }: { params: { tokenId: string } }) {
   const { address, isConnected } = useAccount()
+  const chainId = useChainId()
+  const router = useRouter()
   const [nft, setNft] = useState<NFTDetail | null>(null)
   const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([])
   const [activities, setActivities] = useState<Activity[]>([])
@@ -90,6 +100,70 @@ export default function NFTDetailPage({ params }: { params: { tokenId: string } 
   const [showAuctionModal, setShowAuctionModal] = useState(false)
   const [showChatSystem, setShowChatSystem] = useState(false)
   const [auctionData, setAuctionData] = useState<any>(null)
+  const [usd, setUsd] = useState<string>('')
+
+  // Derive marketplace address with localhost fallback
+  const ENV_ADDR = process.env.NEXT_PUBLIC_NFT_MARKETPLACE_ADDRESS as string | undefined
+  const LOCAL_ADDR = (deploymentLocal as any)?.contracts?.nftMarketplace as string | undefined
+  const NFT_MARKETPLACE_ADDRESS = ((chainId === 1337 ? (ENV_ADDR || LOCAL_ADDR) : ENV_ADDR) || '0x0000000000000000000000000000000000000000') as `0x${string}`
+
+  // Prepare buy transaction similar to card component
+  const { config: buyConfig } = usePrepareContractWrite({
+    address: NFT_MARKETPLACE_ADDRESS,
+    abi: NFTMarketplaceABI,
+    functionName: 'buyNFT',
+    args: [BigInt(params.tokenId)],
+    value: parseEther(nft?.price || '0'),
+    enabled:
+      isConnected &&
+      !!NFT_MARKETPLACE_ADDRESS &&
+      NFT_MARKETPLACE_ADDRESS !== '0x0000000000000000000000000000000000000000' &&
+      !!nft &&
+      !nft.sold &&
+      nft.isListed &&
+      nft.seller !== (address || ''),
+  })
+  const { write: buyNFT, isLoading: isBuying } = useContractWrite(buyConfig)
+
+  const switchToLocalhost = async () => {
+    try {
+      await (window as any)?.ethereum?.request?.({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x539' }],
+      })
+    } catch (err: any) {
+      if (err?.code === 4902) {
+        try {
+          await (window as any)?.ethereum?.request?.({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x539',
+              chainName: 'Localhost 8545',
+              nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+              rpcUrls: ['http://127.0.0.1:8545'],
+              blockExplorerUrls: [],
+            }],
+          })
+        } catch {}
+      }
+    }
+  }
+
+  const handleBuy = async () => {
+    if (!isConnected) {
+      alert('Connect your wallet first.')
+      return
+    }
+    if (chainId !== 1337) {
+      await switchToLocalhost()
+      return
+    }
+    if (buyNFT) {
+      buyNFT()
+      return
+    }
+    alert('Unable to prepare transaction. Check contract address and network.')
+  }
 
   // Mock data
   const mockNFT: NFTDetail = {
@@ -218,6 +292,19 @@ export default function NFTDetailPage({ params }: { params: { tokenId: string } 
       setLoading(false)
     }, 1500)
   }, [params.tokenId])
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        if (!nft?.price) return
+        const prices = await fetchPrices(['eth'])
+        const usdValue = await toUsd(parseFloat(nft.price || '0'), 'eth', prices)
+        if (mounted) setUsd(usdValue.toLocaleString())
+      } catch {}
+    })()
+    return () => { mounted = false }
+  }, [nft?.price])
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -435,9 +522,7 @@ export default function NFTDetailPage({ params }: { params: { tokenId: string } 
                       <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Current Price</div>
                       <div className="flex items-center space-x-2">
                         <span className="text-3xl font-bold text-gray-900 dark:text-white">{nft.price} ETH</span>
-                        <span className="text-lg text-gray-500 dark:text-gray-400">
-                          ≈ ${(parseFloat(nft.price) * 2340).toLocaleString()}
-                        </span>
+                        <span className="text-lg text-gray-500 dark:text-gray-400">{usd && `≈ $${usd}`}</span>
                       </div>
                     </div>
                     {nft.lastSale && (
@@ -453,25 +538,25 @@ export default function NFTDetailPage({ params }: { params: { tokenId: string } 
                   {nft.seller !== address ? (
                     <div className="space-y-3">
                       <div className="flex space-x-3">
-                        <button className="flex-1 btn-primary flex items-center justify-center">
+                        <button className="flex-1 btn-primary flex items-center justify-center disabled:opacity-60" onClick={handleBuy} disabled={isBuying || !isConnected}>
                           <ShoppingCartIcon className="h-5 w-5 mr-2" />
-                          Buy Now
+                          {isBuying ? 'Processing...' : 'Buy Now'}
                         </button>
-                        <button className="flex-1 btn-outline">
+                        <button className="flex-1 btn-outline" onClick={() => alert('Offer flow belum diimplementasikan di demo ini.') }>
                           Make Offer
                         </button>
                       </div>
                       
                       {/* Auction and Chat Actions */}
                       <div className="flex space-x-3">
-                        <button 
+                         <button 
                           onClick={() => setShowAuctionModal(true)}
                           className="flex-1 btn-secondary flex items-center justify-center"
                         >
                           <ChartBarIcon className="h-5 w-5 mr-2" />
                           View Auction
                         </button>
-                        <button 
+                         <button 
                           onClick={() => setShowChatSystem(true)}
                           className="flex-1 btn-outline flex items-center justify-center"
                         >

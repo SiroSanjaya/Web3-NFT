@@ -4,10 +4,13 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   UsersIcon, ShieldCheckIcon, ChartBarIcon, CogIcon, ExclamationTriangleIcon,
-  CheckCircleIcon, XCircleIcon, EyeIcon, TrashIcon, BanIcon, StarIcon,
-  CurrencyDollarIcon, FireIcon, TrendingUpIcon, UserGroupIcon
+  CheckCircleIcon, XCircleIcon, EyeIcon, TrashIcon, NoSymbolIcon, StarIcon,
+  CurrencyDollarIcon, FireIcon, ArrowTrendingUpIcon, UserGroupIcon
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid'
+import toast from 'react-hot-toast'
+import AdminAnalytics from '@/components/AdminAnalytics'
+import AdminUserManagement from '@/components/AdminUserManagement'
 
 // Mock data for admin dashboard
 const mockUsers = [
@@ -204,182 +207,11 @@ export default function AdminPage() {
           className="space-y-8"
         >
           {activeTab === 'overview' && (
-            <div className="space-y-6">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="card text-center"
-                >
-                  <div className="flex items-center justify-center w-12 h-12 bg-primary-100 dark:bg-primary-900/20 rounded-xl mx-auto mb-4">
-                    <UserGroupIcon className="h-6 w-6 text-primary-600" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    {stats.totalUsers.toLocaleString()}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">Total Users</p>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.1 }}
-                  className="card text-center"
-                >
-                  <div className="flex items-center justify-center w-12 h-12 bg-secondary-100 dark:bg-secondary-900/20 rounded-xl mx-auto mb-4">
-                    <FireIcon className="h-6 w-6 text-secondary-600" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    {stats.totalNFTs.toLocaleString()}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">Total NFTs</p>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="card text-center"
-                >
-                  <div className="flex items-center justify-center w-12 h-12 bg-accent-100 dark:bg-accent-900/20 rounded-xl mx-auto mb-4">
-                    <CurrencyDollarIcon className="h-6 w-6 text-accent-600" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    {stats.totalVolume.toFixed(2)} ETH
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">Total Volume</p>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="card text-center"
-                >
-                  <div className="flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-xl mx-auto mb-4">
-                    <TrendingUpIcon className="h-6 w-6 text-green-600" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    {stats.weeklyGrowth}%
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">Weekly Growth</p>
-                </motion.div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="card"
-                >
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <ExclamationTriangleIcon className="h-5 w-5 mr-2 text-yellow-500" />
-                    Pending Actions
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                      <span className="text-sm font-medium">NFT Approvals</span>
-                      <span className="text-lg font-bold text-yellow-600">{stats.pendingApprovals}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                      <span className="text-sm font-medium">Reported Items</span>
-                      <span className="text-lg font-bold text-red-600">{stats.reportedItems}</span>
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="card"
-                >
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <ChartBarIcon className="h-5 w-5 mr-2 text-blue-500" />
-                    Activity Overview
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <span className="text-sm font-medium">Daily Active Users</span>
-                      <span className="text-lg font-bold text-blue-600">{stats.dailyActiveUsers}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                      <span className="text-sm font-medium">Active Users</span>
-                      <span className="text-lg font-bold text-green-600">{stats.activeUsers}</span>
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-            </div>
+            <AdminAnalytics />
           )}
 
           {activeTab === 'users' && (
-            <div className="card">
-              <h3 className="text-lg font-semibold mb-6">User Management</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-3 px-4 font-medium">User</th>
-                      <th className="text-left py-3 px-4 font-medium">Role</th>
-                      <th className="text-left py-3 px-4 font-medium">Status</th>
-                      <th className="text-left py-3 px-4 font-medium">NFTs</th>
-                      <th className="text-left py-3 px-4 font-medium">Sales</th>
-                      <th className="text-left py-3 px-4 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id} className="border-b border-gray-100 dark:border-gray-800">
-                        <td className="py-4 px-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white font-semibold">
-                              {user.name.charAt(0)}
-                            </div>
-                            <div>
-                              <p className="font-medium">{user.name}</p>
-                              <p className="text-sm text-gray-500">{user.address.slice(0, 8)}...{user.address.slice(-6)}</p>
-                            </div>
-                            {user.isVerified && (
-                              <StarIcon className="h-4 w-4 text-blue-500" />
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className="capitalize">{user.role}</span>
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
-                            {getStatusIcon(user.status)}
-                            <span className="ml-1 capitalize">{user.status}</span>
-                          </span>
-                        </td>
-                        <td className="py-4 px-4">{user.totalNFTs}</td>
-                        <td className="py-4 px-4">{user.totalSales} ETH</td>
-                        <td className="py-4 px-4">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleUserAction(user.id, user.status === 'active' ? 'suspend' : 'activate')}
-                              className={`px-3 py-1 rounded text-xs font-medium ${
-                                user.status === 'active'
-                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
-                              }`}
-                            >
-                              {user.status === 'active' ? 'Suspend' : 'Activate'}
-                            </button>
-                            <button className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-xs font-medium">
-                              View
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <AdminUserManagement />
           )}
 
           {activeTab === 'nfts' && (
@@ -509,3 +341,4 @@ export default function AdminPage() {
     </div>
   )
 }
+

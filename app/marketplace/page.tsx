@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAccount, useContractRead, useContractWrite, usePrepareContractWrite } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { motion } from 'framer-motion'
@@ -36,6 +36,7 @@ import DarkModeToggle from '@/components/DarkModeToggle'
 import NotificationCenter from '@/components/NotificationCenter'
 import AdvancedSearchModal from '@/components/AdvancedSearchModal'
 import { NFTCardSkeleton, StatsCardSkeleton } from '@/components/SkeletonLoader'
+import { fetchPrices, toUsd } from '@/utils/coingecko'
 
 // Enhanced mock data with more features
 const mockNFTs = [
@@ -176,6 +177,8 @@ export default function Marketplace() {
   const [isFiltersVisible, setIsFiltersVisible] = useState(true)
   const [showAuctionSystem, setShowAuctionSystem] = useState(false)
   const [selectedAuctionNFT, setSelectedAuctionNFT] = useState<string | null>(null)
+  const [ethUsd, setEthUsd] = useState<number>(0)
+  const [advancedFilters, setAdvancedFilters] = useState<any | null>(null)
 
   // Contract addresses (replace with actual deployed addresses)
   const NFT_MARKETPLACE_ADDRESS = (process.env.NEXT_PUBLIC_NFT_MARKETPLACE_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`
@@ -200,6 +203,47 @@ export default function Marketplace() {
     }
   }, [listedNFTs, contractError, NFT_MARKETPLACE_ADDRESS])
 
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const p = await fetchPrices(['eth'])
+        if (mounted) setEthUsd(p.ethUsd || 0)
+      } catch {}
+    })()
+    return () => { mounted = false }
+  }, [])
+
+  // Persist likes/favorites/view/sort to localStorage
+  useEffect(() => {
+    try {
+      const fav = JSON.parse(localStorage.getItem('favorites') || '[]')
+      const liked = JSON.parse(localStorage.getItem('likedNFTs') || '[]')
+      const vm = localStorage.getItem('viewMode')
+      const sb = localStorage.getItem('sortBy')
+      if (Array.isArray(fav)) setFavorites(fav)
+      if (Array.isArray(liked)) setLikedNFTs(liked)
+      if (vm === 'grid' || vm === 'list') setViewMode(vm)
+      if (sb) setSortBy(sb)
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    try { localStorage.setItem('favorites', JSON.stringify(favorites)) } catch {}
+  }, [favorites])
+
+  useEffect(() => {
+    try { localStorage.setItem('likedNFTs', JSON.stringify(likedNFTs)) } catch {}
+  }, [likedNFTs])
+
+  useEffect(() => {
+    try { localStorage.setItem('viewMode', viewMode) } catch {}
+  }, [viewMode])
+
+  useEffect(() => {
+    try { localStorage.setItem('sortBy', sortBy) } catch {}
+  }, [sortBy])
+
   const handleLike = (tokenId: string) => {
     setLikedNFTs(prev => 
       prev.includes(tokenId) 
@@ -217,29 +261,47 @@ export default function Marketplace() {
   }
 
   const handleAdvancedSearch = (filters: any) => {
-    // Apply advanced filters logic here
-    console.log('Applied filters:', filters)
-    // You can implement more complex filtering logic based on the filters object
+    setAdvancedFilters(filters)
+    // Also reflect some into quick controls
+    if (filters.category) setSelectedCategory(filters.category)
+    if (filters.collection) setSelectedCollection(filters.collection)
+    if (filters.sortBy) setSortBy(filters.sortBy)
   }
 
-  const filteredNFTs = nfts.filter(nft => {
-    const matchesSearch = nft.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         nft.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesCategory = selectedCategory === 'All' || nft.category === selectedCategory
-    const matchesCollection = selectedCollection === 'All Collections' || nft.collection === selectedCollection
-    
-    let matchesPrice = true
-    if (filterPrice === 'low') {
-      matchesPrice = parseFloat(nft.price) < 0.1
-    } else if (filterPrice === 'medium') {
-      matchesPrice = parseFloat(nft.price) >= 0.1 && parseFloat(nft.price) < 1
-    } else if (filterPrice === 'high') {
-      matchesPrice = parseFloat(nft.price) >= 1
-    }
-    
-    return matchesSearch && matchesPrice && matchesCategory && matchesCollection
-  })
+  const filteredNFTs = useMemo(() => {
+    const term = searchTerm.toLowerCase()
+    return nfts.filter(nft => {
+      const matchesSearch = (nft.name || '').toLowerCase().includes(term) ||
+        (nft.description || '').toLowerCase().includes(term)
+
+      const matchesCategory = selectedCategory === 'All' || nft.category === selectedCategory
+      const matchesCollection = selectedCollection === 'All Collections' || nft.collection === selectedCollection
+
+      let matchesPrice = true
+      const price = parseFloat(nft.price || '0')
+      if (filterPrice === 'low') matchesPrice = price < 0.1
+      else if (filterPrice === 'medium') matchesPrice = price >= 0.1 && price < 1
+      else if (filterPrice === 'high') matchesPrice = price >= 1
+
+      // Advanced filters
+      let matchesAdvanced = true
+      if (advancedFilters) {
+        const { minPrice, maxPrice, rarity, attributes, onSale } = advancedFilters
+        if (minPrice) matchesAdvanced = matchesAdvanced && price >= parseFloat(minPrice)
+        if (maxPrice) matchesAdvanced = matchesAdvanced && price <= parseFloat(maxPrice)
+        if (rarity) matchesAdvanced = matchesAdvanced && (nft.rarity?.toLowerCase() === rarity.toLowerCase())
+        if (onSale) matchesAdvanced = matchesAdvanced && !!nft.isListed
+        if (attributes && Array.isArray(attributes) && attributes.length > 0) {
+          for (const a of attributes) {
+            const ok = (nft.attributes || []).some(t => t.trait === a.trait && t.value === a.value)
+            if (!ok) { matchesAdvanced = false; break }
+          }
+        }
+      }
+
+      return matchesSearch && matchesPrice && matchesCategory && matchesCollection && matchesAdvanced
+    })
+  }, [nfts, searchTerm, selectedCategory, selectedCollection, filterPrice, advancedFilters])
 
   const sortedNFTs = [...filteredNFTs].sort((a, b) => {
     switch (sortBy) {
@@ -255,6 +317,8 @@ export default function Marketplace() {
         return (b.likes || 0) - (a.likes || 0)
       case 'popular':
         return (b.views || 0) - (a.views || 0)
+      case 'random':
+        return Math.random() - 0.5
       default:
         return 0
     }
@@ -602,7 +666,9 @@ export default function Marketplace() {
                 </div>
                 <div className="text-gray-600 dark:text-gray-400 text-sm">Floor Price (ETH)</div>
                 <div className="text-xs text-purple-600 mt-1">
-                  ≈ ${(parseFloat(nfts.length > 0 ? (nfts.reduce((sum, nft) => sum + parseFloat(nft.price || '0'), 0)).toFixed(2) : '0') * 2340).toLocaleString()}
+                  ≈ ${(
+                    (nfts.reduce((sum, nft) => sum + parseFloat(nft.price || '0'), 0)) * (ethUsd || 0)
+                  ).toLocaleString()}
                 </div>
               </motion.div>
             </>

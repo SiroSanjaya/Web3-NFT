@@ -1,0 +1,349 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id            String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  password     String
+  avatar       String?
+  bio          String?
+  walletAddress String?  @unique
+  isVerified   Boolean  @default(false)
+  isBanned     Boolean  @default(false)
+  role         UserRole @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  ownedNFTs        NFT[]       @relation("NFTOwner")
+  createdNFTs      NFT[]       @relation("NFTCreator")
+  collections      Collection[] @relation("CollectionCreator")
+  bids            Bid[]
+  auctions        Auction[]    @relation("AuctionCreator")
+  stakingPositions StakingPosition[]
+  messages        Message[]    @relation("MessageSender")
+  receivedMessages Message[]   @relation("MessageReceiver")
+  followers       Follow[]     @relation("FollowFollower")
+  following       Follow[]     @relation("FollowFollowing")
+  likes          Like[]
+  comments       Comment[]
+  notifications  Notification[]
+  adminActions   AdminAction[] @relation("AdminActionPerformer")
+  adminActionTargets AdminAction[] @relation("AdminActionTarget")
+
+  @@map("users")
+}
+
+// NFT model
+model NFT {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  image       String
+  metadata    Json?
+  tokenId     String   @unique
+  contractAddress String
+  price       Float?
+  isForSale   Boolean  @default(false)
+  isAuctioned Boolean  @default(false)
+  royalty     Float    @default(0)
+  attributes  Json[]
+  rarity      String?
+  collectionId String?
+  ownerId     String
+  creatorId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner       User         @relation("NFTOwner", fields: [ownerId], references: [id])
+  creator     User         @relation("NFTCreator", fields: [creatorId], references: [id])
+  collection  Collection?  @relation(fields: [collectionId], references: [id])
+  bids        Bid[]
+  auction     Auction?
+  stakingPosition StakingPosition?
+  likes       Like[]
+  comments    Comment[]
+  transfers   NFTTransfer[]
+  offers      Offer[]
+
+  @@map("nfts")
+}
+
+// Collection model
+model Collection {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  image       String
+  banner      String?
+  category    String
+  royalty     Float    @default(0)
+  isVerified  Boolean  @default(false)
+  creatorId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creator     User   @relation("CollectionCreator", fields: [creatorId], references: [id])
+  nfts        NFT[]
+
+  @@map("collections")
+}
+
+// Auction model
+model Auction {
+  id            String   @id @default(cuid())
+  nftId         String   @unique
+  startingPrice Float
+  reservePrice  Float?
+  currentBid    Float    @default(0)
+  highestBidder String?
+  endTime       DateTime
+  isActive      Boolean  @default(true)
+  creatorId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  nft          NFT      @relation(fields: [nftId], references: [id])
+  creator      User     @relation("AuctionCreator", fields: [creatorId], references: [id])
+  bids         Bid[]
+
+  @@map("auctions")
+}
+
+// Bid model
+model Bid {
+  id        String   @id @default(cuid())
+  amount    Float
+  auctionId String
+  bidderId  String
+  createdAt DateTime @default(now())
+
+  // Relations
+  auction   Auction  @relation(fields: [auctionId], references: [id])
+  bidder    User     @relation(fields: [bidderId], references: [id])
+
+  @@map("bids")
+}
+
+// Staking model
+model StakingPosition {
+  id        String   @id @default(cuid())
+  userId    String
+  nftId     String   @unique
+  poolId    String
+  amount    Int
+  startDate DateTime @default(now())
+  endDate   DateTime
+  rewards   Float    @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  nft       NFT      @relation(fields: [nftId], references: [id])
+  pool      StakingPool @relation(fields: [poolId], references: [id])
+
+  @@map("staking_positions")
+}
+
+// Staking pool model
+model StakingPool {
+  id           String   @id @default(cuid())
+  name         String
+  apy          Float
+  minDuration  Int      // in days
+  maxDuration  Int      // in days
+  totalStaked  Int      @default(0)
+  totalRewards Float    @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  positions   StakingPosition[]
+
+  @@map("staking_pools")
+}
+
+// Message model for chat
+model Message {
+  id           String   @id @default(cuid())
+  content      String
+  type         MessageType @default(TEXT)
+  senderId     String
+  receiverId   String
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  // Relations
+  sender      User     @relation("MessageSender", fields: [senderId], references: [id])
+  receiver    User     @relation("MessageReceiver", fields: [receiverId], references: [id])
+
+  @@map("messages")
+}
+
+// Follow model for social features
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  follower   User     @relation("FollowFollower", fields: [followerId], references: [id])
+  following  User     @relation("FollowFollowing", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+// Like model for social interactions
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  nftId     String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  nft       NFT      @relation(fields: [nftId], references: [id])
+
+  @@unique([userId, nftId])
+  @@map("likes")
+}
+
+// Comment model for social interactions
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String
+  nftId     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  nft       NFT      @relation(fields: [nftId], references: [id])
+
+  @@map("comments")
+}
+
+// NFT Transfer model for tracking ownership history
+model NFTTransfer {
+  id        String   @id @default(cuid())
+  nftId     String
+  fromAddress String?
+  toAddress   String
+  transactionHash String
+  blockNumber Int
+  timestamp  DateTime
+  createdAt  DateTime @default(now())
+
+  // Relations
+  nft       NFT      @relation(fields: [nftId], references: [id])
+
+  @@map("nft_transfers")
+}
+
+// Offer model for NFT offers
+model Offer {
+  id        String   @id @default(cuid())
+  nftId     String
+  offererId String
+  amount    Float
+  expiresAt DateTime
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  nft       NFT      @relation(fields: [nftId], references: [id])
+  offerer   User     @relation(fields: [offererId], references: [id])
+
+  @@map("offers")
+}
+
+// Notification model
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+// Admin Action model for audit trail
+model AdminAction {
+  id        String   @id @default(cuid())
+  performerId String
+  targetId    String
+  action      AdminActionType
+  reason      String?
+  details     Json?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  performer  User     @relation("AdminActionPerformer", fields: [performerId], references: [id])
+  target     User     @relation("AdminActionTarget", fields: [targetId], references: [id])
+
+  @@map("admin_actions")
+}
+
+// Enums
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+}
+
+enum NotificationType {
+  NFT_SOLD
+  BID_PLACED
+  AUCTION_ENDED
+  OFFER_RECEIVED
+  STAKING_REWARDS
+  SYSTEM_UPDATE
+  SECURITY_ALERT
+}
+
+enum AdminActionType {
+  BAN_USER
+  UNBAN_USER
+  VERIFY_COLLECTION
+  UNVERIFY_COLLECTION
+  DELETE_NFT
+  MODERATE_CONTENT
+  SYSTEM_MAINTENANCE
+}
+
+

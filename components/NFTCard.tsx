@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useAccount, useContractWrite, usePrepareContractWrite } from 'wagmi'
+import { useRouter } from 'next/navigation'
+import { useAccount, useContractWrite, usePrepareContractWrite, useChainId } from 'wagmi'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { 
@@ -20,6 +21,12 @@ import {
 } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartIconSolid, StarIcon as StarIconSolid } from '@heroicons/react/24/solid'
 import { NFTMarketplaceABI } from '@/utils/contracts'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - JSON import is allowed via tsconfig resolveJsonModule
+import deploymentLocal from '../deployment-localhost.json'
+import { useEffect } from 'react'
+import { fetchPrices, toUsd } from '@/utils/coingecko'
+import { parseEther } from 'viem'
 
 interface NFT {
   tokenId: string
@@ -47,32 +54,75 @@ interface NFTCardProps {
 
 export default function NFTCard({ nft }: NFTCardProps) {
   const { address, isConnected } = useAccount()
+  const chainId = useChainId()
+  const router = useRouter()
   const [isLiked, setIsLiked] = useState(false)
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
 
-  const NFT_MARKETPLACE_ADDRESS = process.env.NEXT_PUBLIC_NFT_MARKETPLACE_ADDRESS || '0x0000000000000000000000000000000000000000'
+  const ENV_ADDR = process.env.NEXT_PUBLIC_NFT_MARKETPLACE_ADDRESS as string | undefined
+  const LOCAL_ADDR = (deploymentLocal as any)?.contracts?.nftMarketplace as string | undefined
+  const NFT_MARKETPLACE_ADDRESS = (
+    chainId === 1337 ? (ENV_ADDR || LOCAL_ADDR || '0x0000000000000000000000000000000000000000') : (ENV_ADDR || '0x0000000000000000000000000000000000000000')
+  )
 
   // Prepare buy transaction - only if contract address is valid
   const { config: buyConfig } = usePrepareContractWrite({
     address: NFT_MARKETPLACE_ADDRESS as `0x${string}`,
     abi: NFTMarketplaceABI,
     functionName: 'buyNFT',
-    args: [nft.tokenId],
-    value: nft.price,
+    args: [BigInt(nft.tokenId)],
+    value: parseEther(nft.price || '0'),
     enabled: isConnected && !nft.sold && nft.isListed && nft.seller !== address && NFT_MARKETPLACE_ADDRESS !== '0x0000000000000000000000000000000000000000',
   })
 
   const { write: buyNFT, isLoading: isBuying } = useContractWrite(buyConfig)
 
-  const handleBuy = () => {
+  const switchToLocalhost = async () => {
+    try {
+      // 0x539 = 1337 (common Hardhat)
+      await (window as any)?.ethereum?.request?.({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x539' }],
+      })
+    } catch (err: any) {
+      // If the chain hasn't been added to MetaMask
+      if (err?.code === 4902) {
+        try {
+          await (window as any)?.ethereum?.request?.({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x539',
+              chainName: 'Localhost 8545',
+              nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+              rpcUrls: ['http://127.0.0.1:8545'],
+              blockExplorerUrls: [],
+            }],
+          })
+        } catch {}
+      }
+    }
+  }
+
+  const handleBuy = async () => {
+    if (!isConnected) {
+      alert('Connect your wallet first.')
+      return
+    }
+    if (chainId !== 1337) {
+      await switchToLocalhost()
+      return
+    }
     if (buyNFT) {
       buyNFT()
-    } else {
-      // Mock buy for development
-      alert('This is a demo. In production, this would execute the buy transaction.')
+      return
     }
+    alert('Unable to prepare transaction. Check contract address and network.')
+  }
+
+  const handleViewDetails = () => {
+    router.push(`/nft/${nft.tokenId}`)
   }
 
   const handleLike = () => {
@@ -97,7 +147,9 @@ export default function NFTCard({ nft }: NFTCardProps) {
     }
   }
 
-  const formatAddress = (address: string) => {
+  const formatAddress = (address?: string) => {
+    if (!address || typeof address !== 'string') return 'Unknown'
+    if (address.length <= 10) return address
     return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
 
@@ -115,6 +167,20 @@ export default function NFTCard({ nft }: NFTCardProps) {
       default: return 'bg-gray-500'
     }
   }
+
+  const [usd, setUsd] = useState<string>('')
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const prices = await fetchPrices(['eth'])
+        const usdValue = await toUsd(parseFloat(nft.price || '0'), 'eth', prices)
+        if (mounted) setUsd(usdValue.toLocaleString())
+      } catch {}
+    })()
+    return () => { mounted = false }
+  }, [nft.price])
 
   return (
     <motion.div
@@ -241,14 +307,12 @@ export default function NFTCard({ nft }: NFTCardProps) {
             )}
           </div>
           <div className="flex flex-col items-end">
-            <div className="flex items-center space-x-1 text-primary-600 dark:text-primary-400">
+          <div className="flex items-center space-x-1 text-primary-600 dark:text-primary-400" title={usd ? `≈ $${usd}` : ''}>
               <CurrencyDollarIcon className="h-4 w-4" />
               <span className="font-bold text-lg">{formatPrice(nft.price)}</span>
               <span className="text-sm font-medium">ETH</span>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              ≈ ${(parseFloat(nft.price) * 2340).toLocaleString()}
-            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{usd && `≈ $${usd}`}</div>
           </div>
         </div>
 
@@ -347,7 +411,7 @@ export default function NFTCard({ nft }: NFTCardProps) {
                 <button className="flex-1 btn-outline text-sm py-2">
                   Make Offer
                 </button>
-                <button className="flex-1 btn-outline text-sm py-2">
+                <button className="flex-1 btn-outline text-sm py-2" onClick={handleViewDetails}>
                   View Details
                 </button>
               </div>

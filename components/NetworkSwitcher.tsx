@@ -30,6 +30,19 @@ const polygonAmoy = {
   testnet: true,
 }
 
+// Localhost chain (Hardhat)
+const localhost = {
+  id: 1337,
+  name: 'Localhost 8545',
+  network: 'localhost',
+  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    public: { http: ['http://127.0.0.1:8545'] },
+    default: { http: ['http://127.0.0.1:8545'] },
+  },
+  testnet: true,
+}
+
 export default function NetworkSwitcher() {
   const { chain } = useNetwork()
   const { switchNetwork, isLoading, pendingChainId } = useSwitchNetwork()
@@ -40,7 +53,8 @@ export default function NetworkSwitcher() {
     setMounted(true)
   }, [])
 
-  const isCorrectNetwork = chain?.id === polygonAmoy.id
+  const supportedNetworkIds = [polygonAmoy.id, localhost.id]
+  const isSupportedNetwork = supportedNetworkIds.includes(chain?.id ?? -1)
 
   const addPolygonAmoyToMetaMask = async () => {
     if (typeof window !== 'undefined' && (window as any).ethereum) {
@@ -67,6 +81,27 @@ export default function NetworkSwitcher() {
     }
   }
 
+  const addLocalhostToMetaMask = async () => {
+    if (typeof window !== 'undefined' && (window as any).ethereum) {
+      try {
+        await (window as any).ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [
+            {
+              chainId: '0x539', // 1337
+              chainName: 'Localhost 8545',
+              nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+              rpcUrls: ['http://127.0.0.1:8545'],
+              blockExplorerUrls: [],
+            },
+          ],
+        })
+      } catch (error) {
+        console.error('Error adding localhost network:', error)
+      }
+    }
+  }
+
   // Don't render anything until client-side
   if (!mounted) {
     return (
@@ -77,7 +112,7 @@ export default function NetworkSwitcher() {
     )
   }
 
-  if (isCorrectNetwork) {
+  if (isSupportedNetwork) {
     return (
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -85,7 +120,7 @@ export default function NetworkSwitcher() {
         className="flex items-center space-x-2 text-green-600 bg-green-50 px-4 py-2 rounded-lg"
       >
         <CheckCircleIcon className="h-5 w-5" />
-        <span className="text-sm font-medium">Connected to Polygon Amoy Testnet</span>
+        <span className="text-sm font-medium">Connected to {chain?.name || 'Unknown network'}</span>
       </motion.div>
     )
   }
@@ -98,7 +133,7 @@ export default function NetworkSwitcher() {
         className="flex items-center space-x-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-lg"
       >
         <ExclamationTriangleIcon className="h-5 w-5" />
-        <span className="text-sm font-medium">Please switch to Polygon Amoy Testnet</span>
+        <span className="text-sm font-medium">Please switch to Polygon Amoy or Localhost</span>
       </motion.div>
 
       <div className="flex flex-col sm:flex-row gap-2">
@@ -115,6 +150,19 @@ export default function NetworkSwitcher() {
           </button>
         )}
 
+        {switchNetwork && (
+          <button
+            onClick={() => switchNetwork(localhost.id)}
+            disabled={isLoading}
+            className="btn-secondary flex items-center justify-center space-x-2"
+          >
+            {isLoading && pendingChainId === localhost.id ? (
+              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            ) : null}
+            <span>Switch to Localhost</span>
+          </button>
+        )}
+
         <button
           onClick={() => setShowInstructions(!showInstructions)}
           className="btn-secondary"
@@ -127,6 +175,13 @@ export default function NetworkSwitcher() {
           className="btn-secondary"
         >
           Add to MetaMask
+        </button>
+
+        <button
+          onClick={addLocalhostToMetaMask}
+          className="btn-secondary"
+        >
+          Add Localhost
         </button>
       </div>
 
@@ -151,6 +206,16 @@ export default function NetworkSwitcher() {
             </ul>
             <li>Click "Save"</li>
           </ol>
+
+          <div className="mt-4">
+            <h5 className="font-semibold text-gray-900">Localhost (Hardhat)</h5>
+            <ul className="list-disc list-inside ml-4 space-y-1 text-sm text-gray-700">
+              <li><strong>Network Name:</strong> Localhost 8545</li>
+              <li><strong>New RPC URL:</strong> http://127.0.0.1:8545</li>
+              <li><strong>Chain ID:</strong> 1337</li>
+              <li><strong>Currency Symbol:</strong> ETH</li>
+            </ul>
+          </div>
         </motion.div>
       )}
     </div>
