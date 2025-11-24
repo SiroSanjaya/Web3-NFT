@@ -347,6 +347,3 @@ MIT License - see [LICENSE](LICENSE) file for details
 **Built with ❤️ for the Web3 Community**
 
 *NexusVerse - Where NFTs Meet Innovation*
-#   W e b 3 - N F T 
- 
- 
